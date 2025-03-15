@@ -13,11 +13,9 @@ public interface SentimentRepository extends JpaRepository<SentimentEntity, Long
     
     List<SentimentEntity> findBySentiment(SentimentResponse.SentimentType sentiment);
     
-    List<SentimentEntity> findByConfidenceGreaterThanEqual(double confidenceThreshold);
+    List<SentimentEntity> findByPrimaryEmotion(SentimentResponse.EmotionType primaryEmotion);
     
-    List<SentimentEntity> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
-    
-    List<SentimentEntity> findBySource(String source);
-    
-    List<SentimentEntity> findByApiProvider(String apiProvider);
+    List<SentimentEntity> findBySentimentAndPrimaryEmotion(
+        SentimentResponse.SentimentType sentiment, 
+        SentimentResponse.EmotionType primaryEmotion);
 }
