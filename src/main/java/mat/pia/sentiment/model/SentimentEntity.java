@@ -33,6 +33,13 @@ public class SentimentEntity {
     @Column(length = 500)
     private String analysis;
     
+    @Column
+    @Enumerated(EnumType.STRING)
+    private SentimentResponse.EmotionType primaryEmotion;
+    
+    @Column(length = 1000)
+    private String emotionDetails;
+    
     @Column(nullable = false)
     private LocalDateTime createdAt;
     

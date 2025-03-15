@@ -29,9 +29,7 @@ public class SentimentController {
     
     @PostMapping("/analyze")
     public ResponseEntity<SentimentResponse> analyzeSentiment(@Valid @RequestBody SentimentRequest request) {
-        log.info("Received sentiment analysis request for text: {}", 
-            request.getText().substring(0, Math.min(50, request.getText().length())));
-        
+        log.info("Received sentiment analysis request for text: {}", request.getText());
         SentimentResponse response = sentimentService.analyzeSentiment(request);
         return ResponseEntity.ok(response);
     }
@@ -55,6 +53,23 @@ public class SentimentController {
             @PathVariable SentimentResponse.SentimentType type) {
         log.info("Retrieving sentiment analyses with type: {}", type);
         List<SentimentDTO> results = sentimentService.findBySentimentType(type);
+        return ResponseEntity.ok(results);
+    }
+    
+    @GetMapping("/history/emotion/{emotion}")
+    public ResponseEntity<List<SentimentDTO>> getSentimentByEmotion(
+            @PathVariable SentimentResponse.EmotionType emotion) {
+        log.info("Retrieving sentiment analyses with emotion: {}", emotion);
+        List<SentimentDTO> results = sentimentService.findByPrimaryEmotion(emotion);
+        return ResponseEntity.ok(results);
+    }
+    
+    @GetMapping("/history/type/{type}/emotion/{emotion}")
+    public ResponseEntity<List<SentimentDTO>> getSentimentByTypeAndEmotion(
+            @PathVariable SentimentResponse.SentimentType type,
+            @PathVariable SentimentResponse.EmotionType emotion) {
+        log.info("Retrieving sentiment analyses with type: {} and emotion: {}", type, emotion);
+        List<SentimentDTO> results = sentimentService.findBySentimentAndEmotion(type, emotion);
         return ResponseEntity.ok(results);
     }
 }
