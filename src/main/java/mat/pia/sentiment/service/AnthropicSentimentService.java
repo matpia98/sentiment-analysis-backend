@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import mat.pia.sentiment.dto.BatchSentimentRequest;
+import mat.pia.sentiment.dto.BatchSentimentResponse;
 import mat.pia.sentiment.dto.SentimentDTO;
 import mat.pia.sentiment.exception.ApiException;
 import mat.pia.sentiment.exception.ResourceNotFoundException;
@@ -247,5 +249,75 @@ public class AnthropicSentimentService implements SentimentService {
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public BatchSentimentResponse analyzeBatch(BatchSentimentRequest batchRequest) {
+        log.info("Processing batch sentiment analysis with {} requests", batchRequest.getRequests().size());
+        
+        List<SentimentResponse> results = batchRequest.getRequests().stream()
+                .map(this::analyzeSentiment)
+                .collect(Collectors.toList());
+        
+        int totalRequests = batchRequest.getRequests().size();
+        int processedRequests = results.size();
+        
+        int positiveCount = 0;
+        int negativeCount = 0;
+        int neutralCount = 0;
+        
+        Map<SentimentResponse.SentimentType, Integer> sentimentCounts = new HashMap<>();
+        Map<SentimentResponse.EmotionType, Integer> emotionCounts = new HashMap<>();
+        double totalConfidence = 0;
+        
+        for (SentimentResponse response : results) {
+            switch (response.getSentiment()) {
+                case POSITIVE:
+                    positiveCount++;
+                    break;
+                case NEGATIVE:
+                    negativeCount++;
+                    break;
+                case NEUTRAL:
+                    neutralCount++;
+                    break;
+            }
+            
+            sentimentCounts.merge(response.getSentiment(), 1, Integer::sum);
+            
+            emotionCounts.merge(response.getPrimaryEmotion(), 1, Integer::sum);
+            
+            totalConfidence += response.getConfidence();
+        }
+        
+        SentimentResponse.SentimentType dominantSentiment = sentimentCounts.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(SentimentResponse.SentimentType.NEUTRAL);
+        
+        SentimentResponse.EmotionType dominantEmotion = emotionCounts.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(SentimentResponse.EmotionType.NONE);
+        
+        double averageConfidence = processedRequests > 0 ? totalConfidence / processedRequests : 0;
+        
+        BatchSentimentResponse.BatchSummary summary = BatchSentimentResponse.BatchSummary.builder()
+                .totalRequests(totalRequests)
+                .processedRequests(processedRequests)
+                .positiveCount(positiveCount)
+                .negativeCount(negativeCount)
+                .neutralCount(neutralCount)
+                .dominantSentiment(dominantSentiment)
+                .dominantEmotion(dominantEmotion)
+                .averageConfidence(averageConfidence)
+                .build();
+        
+        return BatchSentimentResponse.builder()
+                .results(results)
+                .timestamp(LocalDateTime.now())
+                .summary(summary)
+                .build();
     }
 }

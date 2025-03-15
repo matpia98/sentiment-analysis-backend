@@ -1,5 +1,7 @@
 package mat.pia.sentiment.controller;
 
+import mat.pia.sentiment.dto.BatchSentimentRequest;
+import mat.pia.sentiment.dto.BatchSentimentResponse;
 import mat.pia.sentiment.dto.SentimentDTO;
 import mat.pia.sentiment.exception.ResourceNotFoundException;
 import mat.pia.sentiment.model.SentimentEntity;
@@ -71,5 +73,20 @@ public class SentimentController {
         log.info("Retrieving sentiment analyses with type: {} and emotion: {}", type, emotion);
         List<SentimentDTO> results = sentimentService.findBySentimentAndEmotion(type, emotion);
         return ResponseEntity.ok(results);
+    }
+    
+    @PostMapping("/analyze/batch")
+    public ResponseEntity<BatchSentimentResponse> analyzeBatchSentiment(
+            @Valid @RequestBody BatchSentimentRequest batchRequest) {
+        log.info("Received batch sentiment analysis request with {} texts", 
+                batchRequest.getRequests().size());
+        
+        BatchSentimentResponse response = sentimentService.analyzeBatch(batchRequest);
+        
+        log.info("Completed batch sentiment analysis. Dominant sentiment: {}, Dominant emotion: {}", 
+                response.getSummary().getDominantSentiment(), 
+                response.getSummary().getDominantEmotion());
+        
+        return ResponseEntity.ok(response);
     }
 }
